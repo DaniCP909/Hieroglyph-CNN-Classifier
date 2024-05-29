@@ -83,7 +83,7 @@ class HieroglyphCharacterGenerator:
 
     def getCharCanvasByOffset(self, offset):
         #para font_size = 270 => tamaño canvas aprox 500x500
-        canvas = Image.new("RGB", (2 * (self.font_size + 20), 2 * (self.font_size + 20)), "black")
+        canvas = Image.new("L", (500,500), "black")
         draw = ImageDraw.Draw(canvas)
         ucode = chr(offset)
 
