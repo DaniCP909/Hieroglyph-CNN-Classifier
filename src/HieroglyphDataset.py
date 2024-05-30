@@ -13,12 +13,11 @@ class HieroglyphDataset(Dataset):
 
     
     def __len__(self):
-        return self.generator.getFontLength() + 1
+        return (self.generator.getFontLength() + 1) * (self.augmentatos.getAugmentatorLength() + 1)
     
     def __getitem__(self, idx):
         label = (idx % (self.__len__() + 1))
         image = self.generator.getImageByLabel(label)
         image = self.augmentator.augment(image)
-        cv2.imwrite("images/getitem.png", image)
         return (image, label)
 
