@@ -7,7 +7,7 @@ import cv2
 class HieroglyphDataset(Dataset):
 
     #angle_sh: angulo o factor de sesgado(será *0.1)
-    def __init__(self, generator, augmentator, mask=None, angle_sh=None):
+    def __init__(self, generator, augmentator, mask=None, angle_sh=None, iterations=0):
         self.generator = generator
         self.augmentator = augmentator
         self.mask = mask
@@ -23,6 +23,6 @@ class HieroglyphDataset(Dataset):
     def __getitem__(self, idx):
         label = idx % self.generator.getFontLength()
         image = self.generator.getImageByLabel(label)
-        image = self.augmentator.augment(image, idx, self.mask, self.angle_sh)
+        image = self.augmentator.augment(image, idx, self.mask, self.angle_sh, 1)
         return (image, label)
 

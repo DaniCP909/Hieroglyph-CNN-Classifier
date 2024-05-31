@@ -5,17 +5,20 @@ from HieroglyphCharacterGenerator import HieroglyphCharacterGenerator
 
 class HieroglyphAugmentator:
 
-    morph_augments = [False, False, False]
+                    # dilate, close
+    morph_augments = [False, False]
 
-    geometric_augments = [False, False, False]
+                    # rotate, shear, rotate+shear
+    geometric_augments = [False, False, False, False]
 
     def __init__(self, generator: HieroglyphCharacterGenerator):
         self.generator_len = generator.getFontLength()
 
-    def augment(self, img, idx, mask, angle_sh):
+    def augment(self, img, idx, mask, angle_sh, iterations):
         stage = int(idx / self.generator_len)
-        m_op = int(stage / 3)
-        g_op = stage % 3
+        m_op = int(stage / len(self.geometric_augments))
+        g_op = stage % len(self.geometric_augments)
+        print(f"[{stage}]: {m_op}, {g_op}")
         self.morph_augments[m_op] = True
         self.geometric_augments[g_op] = True
         label = idx % self.generator_len
@@ -23,29 +26,38 @@ class HieroglyphAugmentator:
         result = self.crop(img, 0)
         result = self.resize_to_square(result, 10)
 
-        if(self.morph_augments[0]):
+        if(self.morph_augments[0] and mask is not None):
             result = self.dilate(result, mask)
-        if(self.morph_augments[1]):
-            result = self.dilate(result, mask)
-        if(self.morph_augments[2]):
-            result = self.dilate(result, mask)
-        if(self.geometric_augments[0] or self.geometric_augments[2]):
-            result = self.rotate(result, angle_sh * 0.1)
-        if(self.geometric_augments[1] or self.geometric_augments[2]):
+        if(self.morph_augments[1] and mask is not None):
+            result = self.close(result, mask, iterations)
+        
+        result = self.crop(result, 0)
+        result = self.resize_to_square(result, 10)
+
+        if(self.geometric_augments[1] or self.geometric_augments[3]):
+            result = self.rotate(result, 2 * angle_sh)
+        if(self.geometric_augments[2] or self.geometric_augments[3]):
             result = self.shear(result, angle_sh * 0.1)
+
+        result = self.crop(result, 0)
+        result = self.resize_to_square(result, 10)
+
+        self.morph_augments[m_op] = False
+        self.geometric_augments[g_op] = False
 
         return result
 
+
     def dilate(self, img, mask):
-        img_dilation = cv2.dilate(img, mask, iterations=1)
+        img_dilation = cv2.dilate(img, mask)
         return img_dilation
     
     def open(self, img, mask):
-        open = cv2.morphologyEx(img, cv2.MORPH_OPEN, mask)
+        open = cv2.morphologyEx(img, cv2.MORPH_OPEN, mask, )
         return open
 
-    def close(self, img, mask):
-        close = cv2.morphologyEx(img, cv2.MORPH_CLOSE, mask)
+    def close(self, img, mask, iterations):
+        close = cv2.morphologyEx(img, cv2.MORPH_CLOSE, mask, iterations=iterations)
         return close
     
     def rotate(self, img, angle):
@@ -58,7 +70,7 @@ class HieroglyphAugmentator:
     def shear(self, img, sh_factor):
         (h, w) = img.shape
         matrix = np.float32([
-            [1, sh_factor, 0],
+            [1, sh_factor * 2, 0],
             [0, 1, 0]
         ])
         new_width = w + int(sh_factor * h)
