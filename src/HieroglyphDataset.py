@@ -3,21 +3,26 @@ from torch.utils.data import Dataset
 from HieroglyphCharacterGenerator import HieroglyphCharacterGenerator
 import cv2
 
+
 class HieroglyphDataset(Dataset):
-    def __init__(self, generator, augmentator, mask=None):
+
+    #angle_sh: angulo o factor de sesgado(será *0.1)
+    def __init__(self, generator, augmentator, mask=None, angle_sh=None):
         self.generator = generator
         self.augmentator = augmentator
+        self.mask = mask
+        self.angle_sh = angle_sh 
         
         if self.generator is None: 
             print("Error creating generator")
 
     
     def __len__(self):
-        return (self.generator.getFontLength() + 1) * (self.augmentatos.getAugmentatorLength() + 1)
+        return self.generator.getFontLength() * self.augmentator.getAugmentatorLength()
     
     def __getitem__(self, idx):
-        label = (idx % (self.__len__() + 1))
+        label = idx % self.generator.getFontLength()
         image = self.generator.getImageByLabel(label)
-        image = self.augmentator.augment(image)
+        image = self.augmentator.augment(image, idx, self.mask, self.angle_sh)
         return (image, label)
 

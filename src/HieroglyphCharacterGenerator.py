@@ -57,7 +57,7 @@ class HieroglyphCharacterGenerator:
         return self.end_hex
     
     def getFontLength(self):
-        return self.end_hex - self.start_hex
+        return (self.end_hex - self.start_hex) + 1
     
     
 

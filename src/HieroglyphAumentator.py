@@ -5,35 +5,48 @@ from HieroglyphCharacterGenerator import HieroglyphCharacterGenerator
 
 class HieroglyphAugmentator:
 
-    def __init__(self, generator: HieroglyphCharacterGenerator):
-        self.generator_len = generator.getFontLength
+    morph_augments = [False, False, False]
 
-    def augment(self, img, idx, mask):
-        phase = int(idx / self.generator_len)
+    geometric_augments = [False, False, False]
+
+    def __init__(self, generator: HieroglyphCharacterGenerator):
+        self.generator_len = generator.getFontLength()
+
+    def augment(self, img, idx, mask, angle_sh):
+        stage = int(idx / self.generator_len)
+        m_op = int(stage / 3)
+        g_op = stage % 3
+        self.morph_augments[m_op] = True
+        self.geometric_augments[g_op] = True
         label = idx % self.generator_len
 
         result = self.crop(img, 0)
         result = self.resize_to_square(result, 10)
 
-        if(phase == 0 or label == 0):
-            result = self.dilate(img, mask)
-        elif(phase == 1 or label == 1):
-            result = self.erode(img, mask)
-        elif(phase == 2 or label == 2):
-            result = self.rotate(img, 0.1)
-        elif(phase == 3 or label == 3):
-            result = self.shear(img, 0.1)
-        
-        result =  self.resize_to_square(result)
-        return result
+        if(self.morph_augments[0]):
+            result = self.dilate(result, mask)
+        if(self.morph_augments[1]):
+            result = self.dilate(result, mask)
+        if(self.morph_augments[2]):
+            result = self.dilate(result, mask)
+        if(self.geometric_augments[0] or self.geometric_augments[2]):
+            result = self.rotate(result, angle_sh * 0.1)
+        if(self.geometric_augments[1] or self.geometric_augments[2]):
+            result = self.shear(result, angle_sh * 0.1)
 
-    def erode(self, img, mask):
-        img_erosion = cv2.erode(img, mask, iterations=1) 
-        return img_erosion
+        return result
 
     def dilate(self, img, mask):
         img_dilation = cv2.dilate(img, mask, iterations=1)
         return img_dilation
+    
+    def open(self, img, mask):
+        open = cv2.morphologyEx(img, cv2.MORPH_OPEN, mask)
+        return open
+
+    def close(self, img, mask):
+        close = cv2.morphologyEx(img, cv2.MORPH_CLOSE, mask)
+        return close
     
     def rotate(self, img, angle):
         center_of_rotation = (img.shape[0]/2,img.shape[1]/2)
@@ -74,4 +87,4 @@ class HieroglyphAugmentator:
         return black_img
     
     def getAugmentatorLength(self):
-        return len(self.morph_ops) * ((3 * len(self.affine_ops)) + 1)
+        return len(self.morph_augments) * len(self.geometric_augments)
