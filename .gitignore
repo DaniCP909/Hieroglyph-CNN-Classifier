@@ -3,6 +3,14 @@ images
 src/pruebas.ipynb
 script.sh
 
+#local env
+lib64
+pyvenv.cfg
+activate*
+Activate.ps1
+pip*
+python*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
