@@ -1,7 +1,7 @@
 import math
 import cv2
 import numpy as np
-from HieroglyphCharacterGenerator import HieroglyphCharacterGenerator
+from project import HieroglyphCharacterGenerator
 
 class HieroglyphAugmentator:
 

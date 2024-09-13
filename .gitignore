@@ -2,6 +2,7 @@
 images
 src/pruebas.ipynb
 script.sh
+*env*
 
 #local env
 lib64

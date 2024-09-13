@@ -6,7 +6,7 @@ import torch.nn.functional as F
 import cv2
 
 from HieroglyphCharacterGenerator import HieroglyphCharacterGenerator
-from HieroglyphAumentator import HieroglyphAugmentator
+from project.HieroglyphAugmentator import HieroglyphAugmentator
 from HieroglyphDataset import HieroglyphDataset
 
 cuda = torch.cuda.is_available()

@@ -1,6 +1,6 @@
 import torch
 from torch.utils.data import Dataset
-from HieroglyphCharacterGenerator import HieroglyphCharacterGenerator
+from project.HieroglyphCharacterGenerator import HieroglyphCharacterGenerator
 import cv2
 
 
