@@ -31,8 +31,6 @@ class HieroglyphAugmentator:
 
         if seed is None:
             seed = random.randint(0, 2**32 - 1)           #       <-------- OJO ------ !!!!
-        else:
-            seed = seed
 
         morphValues = self._initMorphValues(seed=seed, idx=idx, struct_element=self.mask)
 
@@ -66,7 +64,7 @@ class HieroglyphAugmentator:
         else:
             strucElement = struct_element
 
-        print(len(self.generators))
+        #print(len(self.generators))
 
         return {
             'generator': random.randint(0, (len(self.generators) - 1)),

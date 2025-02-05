@@ -38,7 +38,7 @@ class Model(nn.Module):
         self.conv2 = nn.Conv2d(16,24,5) #                               [Batch_size,16,12,12] --> [Batch_size,24,8,8]
         self.mxp2 = nn.MaxPool2d(2)   #                                 [Batch_size,24,8,8] ---> [Batch_size,32,8/2,8/2] ---> [Batch_size,24,4,4]
         self.linear1 = nn.Linear(24 * 4 * 4, 100)                       #input shape --> 100 outputs
-        self.linear2 = nn.Linear(100,10)                                #100 inputs --> 10 outputs
+        self.linear2 = nn.Linear(100,1071)                                #100 inputs --> 10 outputs
         
     def forward(self,x):
         X = self.mxp1(F.relu(self.conv1(x)))
