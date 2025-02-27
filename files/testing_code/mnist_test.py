@@ -37,29 +37,46 @@ class Net(nn.Module):
         output = F.log_softmax(x, dim=1)
         return output
     
-    def train(args, model, device, train_loader, optimizer, epoch):
-        train_lossess = []
-        train_counter = []
-        test_losses = []
-        test_counter = []
-        model.train()
-        for batch_idx, (data, target) in enumerate(train_loader):
+
+
+def train(args, model, device, train_loader, optimizer, epoch, train_lossess, train_counter):
+    model.train()
+    for batch_idx, (data, target) in enumerate(train_loader):
+        data, target = data.to(device), target.to(device)
+        optimizer.zero_grad()
+        output = model(data)
+        loss = F.nll_loss(output, target)
+        loss.backward()
+        optimizer.step()
+        if batch_idx % args.log_interval == 0:
+            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+                epoch, batch_idx * len(data), len(train_loader.dataset),
+                100. * batch_idx / len(train_loader), loss.item()))
+            train_lossess.append(loss.item())
+            train_counter.append((batch_idx * 64) + ((epoch - 1) * len(train_loader.dataset)))
+            torch.save(model.state_dict(), './resources/results/model.pth')
+            torch.save(optimizer.state_dict(), './resources/results/optimizer.pth')
+            if args.dry_run:
+                break
+    
+def test(model, device, test_loader, test_lossess):
+    model.eval()
+    test_loss = 0
+    correct = 0
+    with torch.no_grad():
+        for data, target in test_loader:
             data, target = data.to(device), target.to(device)
-            optimizer.zero_grad()
             output = model(data)
-            loss = F.nll_loss(output, target)
-            loss.backward()
-            optimizer.step()
-            if batch_idx % args.log_interval == 0:
-                print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                    epoch, batch_idx * len(data), len(train_loader.dataset),
-                    100. * batch_idx / len(train_loader), loss.item()))
-                train_lossess.append(loss.item)
-                train_counter.append((batch_idx * 64) + ((epoch - 1) * len(train_loader.dataset)))
-                torch.save(model.state_dict(), '/results/model.pth')
-                torch.save(optimizer.state_dict(), '/results/optimizer.pth')
-                if args.dry_run:
-                    break
+            test_loss += F.nll_loss(output, target, reduction='sum').item()  # sum up batch loss
+            pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
+            correct += pred.eq(target.view_as(pred)).sum().item()
+
+    test_loss /= len(test_loader.dataset)
+    test_lossess.append(test_loss)
+    print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
+        test_loss, correct, len(test_loader.dataset),
+        100. * correct / len(test_loader.dataset)))
+
     
 
 def main():
@@ -110,11 +127,17 @@ def main():
         transforms.Normalize((0.1317,), (0.3081,))
     ])
 
-    dataset_train = datasets.MNIST('./data', train=True, download=True, transform=transform)
-    dataset_test = datasets.MNIST('./data', train=False, transform=transform)
+    dataset_train = datasets.MNIST('./resources/data', train=True, download=True, transform=transform)
+    dataset_test = datasets.MNIST('./resources/data', train=False, transform=transform)
 
     train_dataloader = torch.utils.data.DataLoader(dataset_train, **train_kwargs)
     test_dataloader = torch.utils.data.DataLoader(dataset_test, **test_kargs)
+
+    
+    train_lossess = []
+    train_counter = []
+    test_lossess = []
+    test_counter = [i * len(train_dataloader.dataset) for i in range(args.epochs + 1)]
 
     examples = enumerate(test_dataloader)
     batch_idx, (example_data, example_targets) = next(examples)
@@ -129,8 +152,29 @@ def main():
         plt.title('Ground truth: {}'.format(example_targets[i]))
         plt.xticks([])
         plt.yticks([])
-    example_figure.savefig('./examples/examples1.png')
-    
+    example_figure.savefig('./resources/examples1.png')
+
+    model = Net().to(device)
+    print(f'--- Selected: {device}')
+    optimizer = optim.Adadelta(model.parameters(), lr = args.lr)
+
+    scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
+    test(model, device, test_dataloader, test_lossess)
+    for epoch in range(1, args.epochs + 1):
+        train(args, model, device, train_dataloader, optimizer, epoch, train_lossess, train_counter)
+        test(model, device, test_dataloader, test_lossess) 
+        scheduler.step()
+
+    performance_fig = plt.figure()
+    plt.plot(train_counter, train_lossess, color='green')
+    plt.scatter(test_counter, test_lossess, color='purple')
+    plt.legend(['Train loss', 'Test loss'], loc='upper right')
+    plt.xlabel('number of training examples seen')
+    plt.ylabel('begative log likelihood loss')
+    performance_fig.savefig('./resources/performance.png')
+
+    if args.save_model:
+        torch.save(model.state_dict(), "mnist_cnn.pt")   
 
 if __name__ == '__main__':
     main()
