@@ -26,7 +26,7 @@ def main():
     for path,hex_range in zip(paths,ranges):
         all_generators.append(HieroglyphCharacterGenerator(path, hex_range[0], hex_range[1], font_size=100))
 
-    print(f"LONGOO: {len(all_generators)}")
+    print(f"LONG: {len(all_generators)}")
     augmentator = HieroglyphAugmentator(all_generators)
     
     hdataset = HieroglyphDataset(all_generators[0].getFontLength(), augmentator)
@@ -43,7 +43,7 @@ def main():
     for idx in range(dataset_len):
         img_label = hdataset.__getitem__(idx)
         (img, label) = img_label
-        cv2.imwrite(f"files/images/img{idx}.png", img)
+        cv2.imwrite(f"./resources/images/img{idx}.png", img)
 
     print("Mostrando imagenes..")
 
