@@ -54,8 +54,8 @@ def train(args, model, device, train_loader, optimizer, epoch, train_lossess, tr
                 100. * batch_idx / len(train_loader), loss.item()))
             train_lossess.append(loss.item())
             train_counter.append((batch_idx * 64) + ((epoch - 1) * len(train_loader.dataset)))
-            torch.save(model.state_dict(), './resources/results/model.pth')
-            torch.save(optimizer.state_dict(), './resources/results/optimizer.pth')
+            torch.save(model.state_dict(), './results/model_results/model.pth')
+            torch.save(optimizer.state_dict(), './results/model_results/optimizer.pth')
             if args.dry_run:
                 break
     
@@ -127,8 +127,8 @@ def main():
         transforms.Normalize((0.1317,), (0.3081,))
     ])
 
-    dataset_train = datasets.MNIST('./resources/data', train=True, download=True, transform=transform)
-    dataset_test = datasets.MNIST('./resources/data', train=False, transform=transform)
+    dataset_train = datasets.MNIST('./results/data', train=True, download=True, transform=transform)
+    dataset_test = datasets.MNIST('./results/data', train=False, transform=transform)
 
     train_dataloader = torch.utils.data.DataLoader(dataset_train, **train_kwargs)
     test_dataloader = torch.utils.data.DataLoader(dataset_test, **test_kargs)
@@ -152,7 +152,7 @@ def main():
         plt.title('Ground truth: {}'.format(example_targets[i]))
         plt.xticks([])
         plt.yticks([])
-    example_figure.savefig('./resources/examples1.png')
+    example_figure.savefig('./results/examples1.png')
 
     model = Net().to(device)
     print(f'--- Selected: {device}')
@@ -171,7 +171,7 @@ def main():
     plt.legend(['Train loss', 'Test loss'], loc='upper right')
     plt.xlabel('number of training examples seen')
     plt.ylabel('begative log likelihood loss')
-    performance_fig.savefig('./resources/performance.png')
+    performance_fig.savefig('./results/performance.png')
 
     if args.save_model:
         torch.save(model.state_dict(), "mnist_cnn.pt")   

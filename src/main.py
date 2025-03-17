@@ -1,9 +1,11 @@
-from project.HieroglyphCharacterGenerator import HieroglyphCharacterGenerator
-from project.HieroglyphAugmentator import HieroglyphAugmentator
-from project.HieroglyphDataset import HieroglyphDataset
 import cv2
 import sys
 import random
+import numpy as np
+
+from components.HieroglyphCharacterGenerator import HieroglyphCharacterGenerator
+from components.HieroglyphAugmentator import HieroglyphAugmentator
+from components.HieroglyphDataset import HieroglyphDataset
 
 paths = [ 
         "./files/fonts/Noto_Sans_Egyptian_Hieroglyphs/NotoSansEgyptianHieroglyphs-Regular.ttf",
@@ -43,7 +45,16 @@ def main():
     for idx in range(dataset_len):
         img_label = hdataset.__getitem__(idx)
         (img, label) = img_label
-        cv2.imwrite(f"./resources/images/img{idx}.png", img)
+        # Convertir de tensor a NumPy
+        img = img.numpy()  # De tensor a array NumPy
+
+        # Eliminar la dimensión del canal si es 1 -> De (1, H, W) a (H, W)
+        if img.shape[0] == 1:
+            img = img.squeeze(0)
+
+        # Convertir a uint8
+        final_img = (img * 255).astype(np.uint8)
+        cv2.imwrite(f"./results/images/img{idx}.png", final_img)
 
     print("Mostrando imagenes..")
 

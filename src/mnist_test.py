@@ -11,18 +11,18 @@ import torch.optim as optim
 from torchvision import datasets, transforms
 from torch.optim.lr_scheduler import StepLR
 
-from HieroglyphCharacterGenerator import HieroglyphCharacterGenerator
-from HieroglyphAugmentator import HieroglyphAugmentator
-from HieroglyphDataset import HieroglyphDataset
+from components.HieroglyphCharacterGenerator import HieroglyphCharacterGenerator
+from components.HieroglyphAugmentator import HieroglyphAugmentator
+from components.HieroglyphDataset import HieroglyphDataset
 
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
-        self.conv1 = nn.Conv2d(1, 64, 5, 1) #(input, output(n filters), kernel_size, stride)
-        self.conv2 = nn.Conv2d(64, 128, 5, 1)
+        self.conv1 = nn.Conv2d(1, 32, 3, 1) #(input, output(n filters), kernel_size, stride)
+        self.conv2 = nn.Conv2d(32, 64, 3, 1)
         self.dropout1 = nn.Dropout(0.25)
         self.dropout2 = nn.Dropout(0.5)
-        self.fc1 = nn.Linear(128 * 60 * 60, 256) #input features from previous layer, reduce dim
+        self.fc1 = nn.Linear(64 * 12 * 12, 256) #input features from previous layer, reduce dim
         self.fc2 = nn.Linear(256, 1071) #output prev dense layer, n classes
 
     
@@ -58,8 +58,8 @@ def train(args, model, device, train_loader, optimizer, epoch, train_lossess, tr
                 100. * batch_idx / len(train_loader), loss.item()))
             train_lossess.append(loss.item())
             train_counter.append((batch_idx * 64) + ((epoch - 1) * len(train_loader.dataset)))
-            torch.save(model.state_dict(), './resources/results/my_model.pth')
-            torch.save(optimizer.state_dict(), './resources/results/my_optimizer.pth')
+            torch.save(model.state_dict(), './results/model_results/my_model.pth')
+            torch.save(optimizer.state_dict(), './results/model_results/my_optimizer.pth')
             if args.dry_run:
                 break
     
@@ -171,7 +171,7 @@ def main():
     #    plt.title('Ground truth: {}'.format(example_targets[i]))
     #    plt.xticks([])
     #    plt.yticks([])
-    #example_figure.savefig('./resources/my_examples1.png')
+    #example_figure.savefig('./results/my_examples1.png')
 
     model = Net().to(device)
     print(f'--- Selected: {device}')
@@ -190,7 +190,7 @@ def main():
     plt.legend(['Train loss', 'Test loss'], loc='upper right')
     plt.xlabel('number of training examples seen')
     plt.ylabel('begative log likelihood loss')
-    performance_fig.savefig('./resources/my_performance.png')
+    performance_fig.savefig('./results/my_performance.png')
 
     if args.save_model:
         torch.save(model.state_dict(), "mnist_cnn.pt")   
