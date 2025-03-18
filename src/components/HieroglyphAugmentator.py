@@ -48,7 +48,7 @@ class HieroglyphAugmentator:
         sheared = shear(rotated, morphValues['sh_factor'])
 
         result = crop(sheared, 0)
-        result = cv2.resize(resize_to_square(result, 10), (28, 28))
+        result = cv2.resize(resize_to_square(result, 10), (100, 100))
 
         return (result, seed)
 
