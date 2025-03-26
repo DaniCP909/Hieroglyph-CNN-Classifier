@@ -29,6 +29,11 @@ class HieroglyphCharacterGenerator:
     start_hex_new_gardiner = 0x0000E000
     end_hex_new_gardiner = 0x0000E42E
 
+    path_short = [
+    "./files/fonts/egyptian-hieroglyphs-silhouette/EgyptianHieroglyphsSilhouet.otf"
+    ]
+    
+
 
     #font 1-2, size 1-1
     def __init__(self,
@@ -36,8 +41,9 @@ class HieroglyphCharacterGenerator:
                  start_hex,
                  end_hex,
                  font_size=270,
+                 short_font=False,
                  ):
-        
+        self.short_font = short_font
         if(None not in (font_path, start_hex, end_hex) and start_hex <= end_hex):
             if(os.path.exists(font_path)):
                 self.font_path = font_path
@@ -49,6 +55,14 @@ class HieroglyphCharacterGenerator:
                 self.hex_range = [x for x in range(self.start_hex, self.end_hex)]
         else:
             print("Error arguments")
+        self.short_font_tags = [33,36,37,40,41,43,45,49,50,51,52,53,54,55,56,57,64,
+                       65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,81,82,
+                       83,84,85,86,87,88,89,90,97,98,99,100,101,102,103,104,
+                       105,106,107,108,109,110,111,112,113,114,115,116,117,
+                       118,119,120,121,122,162,163,165]
+        print(f"Tags list len: {len(self.short_font_tags)}")
+
+        self.range_short = (0, len(self.short_font_tags) - 1)
 
     def getMinFromFont(self):
         return self.start_hex
@@ -70,6 +84,7 @@ class HieroglyphCharacterGenerator:
     def label2offset(self,
                    label: int,
                    ):
+        if(self.short_font): return (self.short_font_tags[label])
         if(label < 0 or label > self.getMaxFromFont()):     #ojo
             print("Error: label out of range")
             return (-1)

@@ -4,7 +4,7 @@ import numpy as np
 from typing import List
 import random
 from .HieroglyphCharacterGenerator import HieroglyphCharacterGenerator
-from .CustomMorphOps import dilate, erode, close, rotate, shear, crop, resize_to_square
+from .CustomMorphOps import dilate, erode, close, rotate, shear, crop, resize_to_square, fill
 
 STRUC_ELEM_SHAPE = (3,3)
 MIN_ANGLE = 0
@@ -23,19 +23,28 @@ class HieroglyphAugmentator:
         "shear": shear
     }
 
-    def __init__(self, generators: List[HieroglyphCharacterGenerator], mask=None):
+    def __init__(self, generators: List[HieroglyphCharacterGenerator], mask=None, seed=0, fill=False):
         self.generators = generators
         self.mask = mask
+        self.origin_seed=seed
+        self.fill = fill
+        print(f"........... SEED(saved not stablished): {self.origin_seed}")
+
+    def incrementSeed(self, epoch: int):
+        new_seed = self.origin_seed + epoch
+        random.seed(new_seed)
+        np.random.seed(new_seed)
+        print(f"........... SEED(update): {new_seed}")
 
     def augment(self, idx, seed: int=None):
 
-        if seed is None:
-            seed = random.randint(0, 2**32 - 1)           #       <-------- OJO ------ !!!!
-
-        morphValues = self._initMorphValues(seed=seed, idx=idx, struct_element=self.mask)
+        morphValues = self._initMorphValues(struct_element=self.mask)
 
         selected_generator = self.generators[morphValues['generator']]
         raw_img = selected_generator.getImageByLabel(idx)
+
+        if(self.fill): raw_img = fill(raw_img)
+
         img = resize_to_square(crop(raw_img, 0), 10)
 
         if morphValues['close']:
@@ -53,11 +62,9 @@ class HieroglyphAugmentator:
         return (result, seed)
 
     
-    def _initMorphValues(self, seed, idx, struct_element=None, ):
-        random.seed(seed + idx)
-        np.random.seed(seed + idx)
+    def _initMorphValues(self, struct_element=None):
 
-        if struct_element is None:
+        if struct_element is None:  # 3x3 elem with random values but center = 1
             strucElementShape = (3,3)
             strucElement = np.random.randint(0, 2, strucElementShape)
             strucElement[strucElementShape[0] // 2, strucElementShape[1] // 2] = 1

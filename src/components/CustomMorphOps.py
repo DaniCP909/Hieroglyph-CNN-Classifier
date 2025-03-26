@@ -34,12 +34,21 @@ def shear(img, sh_factor):
     new_width = w + int(sh_factor * h)
     return cv2.warpAffine(img, matrix, (new_width, h))
 
+def fill(img): 
+        img_copy = img
+        contours, hierarchy = cv2.findContours(img_copy,  cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+        cv2.drawContours(img_copy, contours, -1, color=(255, 255, 255), thickness=cv2.FILLED)
+        return img_copy
+
+
 def crop(img, padding=2):
         img_copy = img
         contours, hierarchy = cv2.findContours(img_copy,  cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-        x, y, w, h = cv2.boundingRect(np.concatenate(contours))
-        return_img = img_copy[max(0, y - padding): y+h + padding, max(0, x - padding): x+w + padding]
-        return return_img
+        if len(contours) > 0: 
+            x, y, w, h = cv2.boundingRect(np.concatenate(contours))
+            return_img = img_copy[max(0, y - padding): y+h + padding, max(0, x - padding): x+w + padding]
+            return return_img
+        return img_copy
     
 def resize_to_square(img, padding=0):
     new_image = img
