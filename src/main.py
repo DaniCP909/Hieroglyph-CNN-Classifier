@@ -1,6 +1,7 @@
 
 import cv2
 import matplotlib.pyplot as plt
+import numpy as np
 
 import argparse
 
@@ -15,33 +16,12 @@ from components.HieroglyphCharacterGenerator import HieroglyphCharacterGenerator
 from components.HieroglyphAugmentator import HieroglyphAugmentator
 from components.HieroglyphDataset import HieroglyphDataset
 
-class Net(nn.Module):
-    def __init__(self):
-        super(Net, self).__init__()
-        self.conv1 = nn.Conv2d(1, 64, 3, 1) #(input, output(n filters), kernel_size, stride)
-        self.conv2 = nn.Conv2d(64, 128, 3, 1)
-        self.dropout1 = nn.Dropout(0.25)
-        self.dropout2 = nn.Dropout(0.5)
-        self.fc1 = nn.Linear(128 * 48 * 48, 1024) #input features from previous layer, reduce dim
-        self.fc2 = nn.Linear(1024, 1071) #output prev dense layer, n classes
+from MnistModel import MnistModel
+from GlyphnetModel import Glyphnet
 
-    
-    def forward(self, x):           #28x28                                  |   #64x64 57600                            |   #128x128 246016
-        x = self.conv1(x)           #[bs, 1, 28, 28] --> [bs, 32, 26, 26]   |   #[bs, 1, 64, 64] --> [bs, 32, 62, 62]   |   #[bs, 1, 128, 128] --> [bs, 32, 126, 126]
-        x = F.relu(x)
-        x = self.conv2(x)           #[bs, 32, 26, 26] --> [bs, 64, 24, 24]  |   #[bs, 32, 62, 62] --> [bs, 64, 60, 60]  |   #[bs, 32, 126, 126] --> [bs, 64, 124, 124]
-        x = F.relu(x)
-        x = F.max_pool2d(x, 2)      #[bs, 64, 24, 24] --> [bs, 64, 12, 12]  |   #[bs, 64, 60, 60] --> [bs, 64, 30, 30]  |   #[bs, 64, 124, 124] --> [bs, 64, 62, 62]
-        x = self.dropout1(x)
-        x = torch.flatten(x, 1)
-        x = self.fc1(x)
-        x = F.relu(x)
-        x = self.dropout2(x)
-        x = self.fc2(x)
-        output = F.log_softmax(x, dim=1)
-        return output
-    
-
+from sklearn.metrics import confusion_matrix
+import seaborn as sn
+import pandas as pd
 
 def train(args, model, device, train_loader, optimizer, epoch, train_lossess, train_counter):
     model.train()
@@ -58,8 +38,8 @@ def train(args, model, device, train_loader, optimizer, epoch, train_lossess, tr
                 100. * batch_idx / len(train_loader), loss.item()))
             train_lossess.append(loss.item())
             train_counter.append((batch_idx * 64) + ((epoch - 1) * len(train_loader.dataset)))
-            torch.save(model.state_dict(), './results/model_results/my_model.pth')
-            torch.save(optimizer.state_dict(), './results/model_results/my_optimizer.pth')
+            torch.save(model.state_dict(), f'../results/model_results/my_model_glyphnet{args.glyphnet}_shortfont{args.short_font}_fill{args.fill}.pth')
+            torch.save(optimizer.state_dict(), f'../results/model_results/my_optimizer_glyphnet{args.glyphnet}_shortfont{args.short_font}_fill{args.fill}.pth')
             if args.dry_run:
                 break
     
@@ -99,6 +79,9 @@ def main():
     parser.add_argument('--seed', type=int, default=1, metavar='S', help='random seed (default = 1)')
     parser.add_argument('--log-interval', type=int, default=10, metavar='N', help='how many batches to wait before logging training status')
     parser.add_argument('--save-model', action='store_true', default=False, help='Saves current Model')
+    parser.add_argument('--glyphnet', action='store_true', default=False, help='Select model False(MnistExample) or True(Glyphnet)')
+    parser.add_argument('--short-font', action='store_true', default=False, help='Select short filled font False(Noto+Gardenier) or True(Silhousette)')
+    parser.add_argument('--fill', action='store_true', default=False, help='Fill contours in generator')
 
     args = parser.parse_args()
 
@@ -106,7 +89,7 @@ def main():
     use_mps = not args.no_mps and torch.backends.mps.is_available()
 
     torch.manual_seed(args.seed)
-    print(f'*** Training settings: batch_size:{args.batch_size}, test_bath_size:{args.test_batch_size}, epochs:{args.epochs}, lr:{args.lr}, gamma:{args.gamma}, no-cuda:{args.no_cuda}, no_mps:{args.no_mps}, dry_run:{args.dry_run}, seed:{args.seed}, log_interval:{args.log_interval}, save_model:{args.save_model}')
+    print(f'*** Training settings: batch_size:{args.batch_size}, test_batch_size:{args.test_batch_size}, epochs:{args.epochs}, lr:{args.lr}, gamma:{args.gamma}, no-cuda:{args.no_cuda}, no_mps:{args.no_mps}, dry_run:{args.dry_run}, seed:{args.seed}, log_interval:{args.log_interval}, save_model:{args.save_model}')
 
 
     if use_cuda:
@@ -132,22 +115,41 @@ def main():
     ])
 
     paths = [ 
-        "./files/fonts/Noto_Sans_Egyptian_Hieroglyphs/NotoSansEgyptianHieroglyphs-Regular.ttf",
-        "./files/fonts/NewGardiner/NewGardinerBMP.ttf",
+        "../files/fonts/Noto_Sans_Egyptian_Hieroglyphs/NotoSansEgyptianHieroglyphs-Regular.ttf",
+        "../files/fonts/NewGardiner/NewGardinerBMP.ttf",
             ]
     ranges = [ 
         (0x00013000, 0x0001342E),
         (0x0000E000, 0x0000E42E),
             ]
+    
+    path_short = [
+    "../files/fonts/egyptian-hieroglyphs-silhouette/EgyptianHieroglyphsSilhouet.otf"
+    ]
+    short_font_tags = [33,36,37,40,41,43,45,49,50,51,52,53,54,55,56,57,64,
+                       65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,81,82,
+                       83,84,85,86,87,88,89,90,97,98,99,100,101,102,103,104,
+                       105,106,107,108,109,110,111,112,113,114,115,116,117,
+                       118,119,120,121,122,162,163,165]
+    range_short = (0, len(short_font_tags) - 1)
 
     struct_element = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
 
-    generator = HieroglyphCharacterGenerator(paths[0], ranges[0][0], ranges[0][1], font_size=100)
-    augmentator = HieroglyphAugmentator([generator], mask=struct_element)
+    if args.short_font: 
+        generator = HieroglyphCharacterGenerator(path_short[0], range_short[0], range_short[1], font_size=100, short_font=True)
+        augmentator = HieroglyphAugmentator([generator], mask=struct_element, fill=False)
+        generator_len = generator.getFontLength()
+    else: 
+        all_generators = []
+        for path,hex_range in zip(paths,ranges):
+            all_generators.append(HieroglyphCharacterGenerator(path, hex_range[0], hex_range[1], font_size=100))
+        augmentator = HieroglyphAugmentator(all_generators, mask=struct_element, fill=args.fill)
+        generator_len = all_generators[0].getFontLength()
 
 
-    dataset_train = HieroglyphDataset(1071, augmentator=augmentator)
-    dataset_test = HieroglyphDataset(1071, augmentator=augmentator)
+
+    dataset_train = HieroglyphDataset(generator_len, augmentator=augmentator)
+    dataset_test = HieroglyphDataset(generator_len, augmentator=augmentator)
 
     train_dataloader = torch.utils.data.DataLoader(dataset_train, **train_kwargs)
     test_dataloader = torch.utils.data.DataLoader(dataset_test, **test_kargs)
@@ -173,7 +175,9 @@ def main():
     #    plt.yticks([])
     #example_figure.savefig('./results/my_examples1.png')
 
-    model = Net().to(device)
+    if args.glyphnet: model = Glyphnet(num_classes=generator_len).to(device)
+    else: model = MnistModel(num_classes=generator_len).to(device)
+
     print(f'--- Selected: {device}')
     optimizer = optim.Adadelta(model.parameters(), lr = args.lr)
 
@@ -190,7 +194,33 @@ def main():
     plt.legend(['Train loss', 'Test loss'], loc='upper right')
     plt.xlabel('number of training examples seen')
     plt.ylabel('begative log likelihood loss')
-    performance_fig.savefig('./results/my_performance.png')
+    performance_fig.savefig(f'../results/my_performance_glyphnet{args.glyphnet}_shortfont{args.short_font}_fill{args.fill}.png')
+
+    #Confusssion matrix
+    y_pred = []
+    y_true = []
+
+    # iterate over test data
+    for inputs, labels in test_dataloader:
+        output = model(inputs) # Feed Network
+
+        output = (torch.max(torch.exp(output), 1)[1]).cpu().numpy()
+        y_pred.extend(output) # Save Prediction
+
+        labels = labels.data.cpu().numpy()
+        y_true.extend(labels) # Save Truth
+        
+    # constant for classes
+    classes = [x for x in range(generator_len)]
+
+    # Build confusion matrix
+    cf_matrix = confusion_matrix(y_true, y_pred)
+    df_cm = pd.DataFrame(cf_matrix / np.sum(cf_matrix, axis=1)[:, None], index = [i for i in classes],
+                         columns = [i for i in classes])
+    fig_size = min(30, max(10, generator_len * 0.02))  # Ensure a reasonable range
+    plt.figure(figsize=(fig_size, fig_size))
+    #sn.heatmap(df_cm, annot=True)
+    plt.savefig(f'../results/confusion_mat_glyphnet{args.glyphnet}_shortfont{args.short_font}_fill{args.fill}.png')
 
     if args.save_model:
         torch.save(model.state_dict(), "mnist_cnn.pt")   

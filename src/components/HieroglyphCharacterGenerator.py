@@ -13,8 +13,8 @@ import os
 class HieroglyphCharacterGenerator:
 
     paths = [ 
-        "./files/fonts/Noto_Sans_Egyptian_Hieroglyphs/NotoSansEgyptianHieroglyphs-Regular.ttf",
-        "./files/fonts/NewGardiner/NewGardinerBMP.ttf",
+        "../files/fonts/Noto_Sans_Egyptian_Hieroglyphs/NotoSansEgyptianHieroglyphs-Regular.ttf",
+        "../files/fonts/NewGardiner/NewGardinerBMP.ttf",
             ]
     
     
@@ -30,7 +30,7 @@ class HieroglyphCharacterGenerator:
     end_hex_new_gardiner = 0x0000E42E
 
     path_short = [
-    "./files/fonts/egyptian-hieroglyphs-silhouette/EgyptianHieroglyphsSilhouet.otf"
+    "../files/fonts/egyptian-hieroglyphs-silhouette/EgyptianHieroglyphsSilhouet.otf"
     ]
     
 

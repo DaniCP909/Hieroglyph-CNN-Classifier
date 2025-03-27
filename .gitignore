@@ -1,4 +1,5 @@
 #prj
+results/*.png
 results/images/*
 !results/images/.gitkeep
 results/model_results/*
