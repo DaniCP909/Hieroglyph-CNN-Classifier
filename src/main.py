@@ -184,7 +184,9 @@ def main():
     scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
     test(model, device, test_dataloader, test_lossess)
     for epoch in range(1, args.epochs + 1):
+        augmentator.incrementSeed(epoch) #starts at 1 or origin_seed + 1 
         train(args, model, device, train_dataloader, optimizer, epoch, train_lossess, train_counter)
+        augmentator.incrementTestSeed()#returns always 0 or origin_seed
         test(model, device, test_dataloader, test_lossess) 
         scheduler.step()
 
@@ -196,31 +198,6 @@ def main():
     plt.ylabel('begative log likelihood loss')
     performance_fig.savefig(f'../results/my_performance_glyphnet{args.glyphnet}_shortfont{args.short_font}_fill{args.fill}.png')
 
-    #Confusssion matrix
-    y_pred = []
-    y_true = []
-
-    # iterate over test data
-    for inputs, labels in test_dataloader:
-        output = model(inputs) # Feed Network
-
-        output = (torch.max(torch.exp(output), 1)[1]).cpu().numpy()
-        y_pred.extend(output) # Save Prediction
-
-        labels = labels.data.cpu().numpy()
-        y_true.extend(labels) # Save Truth
-        
-    # constant for classes
-    classes = [x for x in range(generator_len)]
-
-    # Build confusion matrix
-    cf_matrix = confusion_matrix(y_true, y_pred)
-    df_cm = pd.DataFrame(cf_matrix / np.sum(cf_matrix, axis=1)[:, None], index = [i for i in classes],
-                         columns = [i for i in classes])
-    fig_size = min(30, max(10, generator_len * 0.02))  # Ensure a reasonable range
-    plt.figure(figsize=(fig_size, fig_size))
-    #sn.heatmap(df_cm, annot=True)
-    plt.savefig(f'../results/confusion_mat_glyphnet{args.glyphnet}_shortfont{args.short_font}_fill{args.fill}.png')
 
     if args.save_model:
         torch.save(model.state_dict(), "mnist_cnn.pt")   

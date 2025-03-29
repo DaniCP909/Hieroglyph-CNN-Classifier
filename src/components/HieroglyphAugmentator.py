@@ -31,10 +31,13 @@ class HieroglyphAugmentator:
         print(f"........... SEED(saved not stablished): {self.origin_seed}")
 
     def incrementSeed(self, epoch: int):
-        new_seed = self.origin_seed + epoch
+        new_seed = self.origin_seed + epoch + 1
         random.seed(new_seed)
         np.random.seed(new_seed)
         print(f"........... SEED(update): {new_seed}")
+
+    def incrementTestSeed(self):
+        return self.origin_seed
 
     def augment(self, idx, seed: int=None):
 
