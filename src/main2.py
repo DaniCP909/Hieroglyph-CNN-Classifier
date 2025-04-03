@@ -16,8 +16,7 @@ from components.HieroglyphCharacterGenerator import HieroglyphCharacterGenerator
 from components.HieroglyphAugmentator import HieroglyphAugmentator
 from components.HieroglyphDataset import HieroglyphDataset
 
-from MnistModel import MnistModel
-from GlyphnetModel import Glyphnet
+from ModMnistModel import ModMnistModel
 
 from sklearn.metrics import confusion_matrix
 import seaborn as sn
@@ -102,7 +101,7 @@ def main():
     parser.add_argument('--seed', type=int, default=1, metavar='S', help='random seed (default = 1)')
     parser.add_argument('--log-interval', type=int, default=10, metavar='N', help='how many batches to wait before logging training status')
     parser.add_argument('--save-model', action='store_true', default=False, help='Saves current Model')
-    parser.add_argument('--glyphnet', action='store_true', default=False, help='Select model False(MnistExample) or True(Glyphnet)')
+    parser.add_argument('--large-mod', action='store_true', default=False, help='Select model False(1024) or True(2048)')
     parser.add_argument('--short-font', action='store_true', default=False, help='Select short filled font False(Noto+Gardenier) or True(Silhousette)')
     parser.add_argument('--fill', action='store_true', default=False, help='Fill contours in generator')
 
@@ -199,8 +198,8 @@ def main():
     #    plt.yticks([])
     #example_figure.savefig('./results/my_examples1.png')
 
-    if args.glyphnet: model = Glyphnet(num_classes=generator_len).to(device)
-    else: model = MnistModel(num_classes=generator_len).to(device)
+    if args.large_mod: model = ModMnistModel(num_classes=generator_len).to(device)
+    else: model = ModMnistModel(num_classes=generator_len, fc1_out=1024).to(device)
 
     print(f'--- Selected: {device}')
     optimizer = optim.Adadelta(model.parameters(), lr = args.lr)

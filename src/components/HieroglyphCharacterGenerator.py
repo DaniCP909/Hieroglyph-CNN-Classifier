@@ -60,7 +60,6 @@ class HieroglyphCharacterGenerator:
                        83,84,85,86,87,88,89,90,97,98,99,100,101,102,103,104,
                        105,106,107,108,109,110,111,112,113,114,115,116,117,
                        118,119,120,121,122,162,163,165]
-        print(f"Tags list len: {len(self.short_font_tags)}")
 
         self.range_short = (0, len(self.short_font_tags) - 1)
 
@@ -72,6 +71,10 @@ class HieroglyphCharacterGenerator:
     
     def getFontLength(self):
         return (self.end_hex - self.start_hex) + 1
+    
+    def getFontName(self):
+        last_shlash_index = self.font_path.rfind("/")
+        return self.font_path[last_shlash_index + 1:]
     
     
 
