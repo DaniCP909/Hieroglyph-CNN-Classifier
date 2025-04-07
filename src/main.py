@@ -15,6 +15,7 @@ from torch.optim.lr_scheduler import StepLR
 from components.HieroglyphCharacterGenerator import HieroglyphCharacterGenerator
 from components.HieroglyphAugmentator import HieroglyphAugmentator
 from components.HieroglyphDataset import HieroglyphDataset
+from components.VisualizeTools import plot_predictions_table, compareDatasetPredicts
 
 from MnistModel import MnistModel
 from GlyphnetModel import Glyphnet
@@ -44,11 +45,13 @@ def train(args, model, device, train_loader, optimizer, epoch, train_lossess, tr
                 break
     print(f"Trained Epoch: {epoch}")
     
-def test(model, device, test_loader, test_lossess, correct_history):
+def test(model, device, test_loader, test_lossess):
     model.eval()
     test_loss = 0
     correct = 0
-    correct_predictions = {}  # Dictionary to store correct classifications
+
+    all_predictions = []
+    all_targets = []
     
     with torch.no_grad():
         for data, target in test_loader:
@@ -56,17 +59,11 @@ def test(model, device, test_loader, test_lossess, correct_history):
             output = model(data)
             test_loss += F.nll_loss(output, target, reduction='sum').item()  # sum up batch loss
             pred = output.argmax(dim=1, keepdim=True)  # get index of max log-probability
-            matches = pred.eq(target.view_as(pred))
 
-            for i, match in enumerate(matches):
-                class_id = target[i].item()
-                if match.item():  # If prediction is correct
-                    if class_id in correct_predictions:
-                        correct_predictions[class_id] += 1
-                    else:
-                        correct_predictions[class_id] = 1
+            all_predictions.extend(pred.view(-1).cpu().numpy())
+            all_targets.extend(target.cpu().numpy())
 
-            correct += matches.sum().item()
+            correct += pred.eq(target.view_as(pred)).sum().item()
 
     test_loss /= len(test_loader.dataset)
     test_lossess.append(test_loss)
@@ -75,16 +72,10 @@ def test(model, device, test_loader, test_lossess, correct_history):
         test_loss, correct, len(test_loader.dataset),
         100. * correct / len(test_loader.dataset)))
 
-    print("Correctly classified counts per class:", correct_predictions)  # Print or log this
-    # Store this epoch's correct predictions in global dictionary
-    for key, count in correct_predictions.items():
-        if key not in correct_history:
-            correct_history[key] = []
-        correct_history[key].append(count)
+    accuracy = 100. * correct / len(test_loader.dataset)
 
-    return correct_predictions
+    return all_predictions, all_targets, accuracy
 
-    
 
 def main():
 
@@ -92,7 +83,7 @@ def main():
     parser = argparse.ArgumentParser(description='Entrenamiento MNIST con PyTorch')
 
     parser.add_argument('--batch-size', type=int, default=64, metavar='N', help='input batch size for training (default = 64)')
-    parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N', help='input batch size for testing (default = 1000)')
+    parser.add_argument('--test-batch-size', type=int, default=64, metavar='N', help='input batch size for testing (default = 1000)')
     parser.add_argument('--epochs', type=int, default=14, metavar='N', help='number of epochs to train (default = 14)')
     parser.add_argument('--lr', type=float, default=1.0, metavar='LR', help='learning rate (default = 1.0)')
     parser.add_argument('--gamma', type=float, default=0.7, metavar='M', help='learning rate step gamma (default = 0.7)')
@@ -105,6 +96,7 @@ def main():
     parser.add_argument('--glyphnet', action='store_true', default=False, help='Select model False(MnistExample) or True(Glyphnet)')
     parser.add_argument('--short-font', action='store_true', default=False, help='Select short filled font False(Noto+Gardenier) or True(Silhousette)')
     parser.add_argument('--fill', action='store_true', default=False, help='Fill contours in generator')
+    parser.add_argument('--experiment', type=int, default=0, metavar='N', help='id of experiment for indexing results')
 
     args = parser.parse_args()
 
@@ -140,10 +132,12 @@ def main():
     paths = [ 
         "../files/fonts/Noto_Sans_Egyptian_Hieroglyphs/NotoSansEgyptianHieroglyphs-Regular.ttf",
         "../files/fonts/NewGardiner/NewGardinerBMP.ttf",
+        "./files/fonts/JSeshFont/JSeshFont.ttf",
             ]
     ranges = [ 
         (0x00013000, 0x0001342E),
         (0x0000E000, 0x0000E42E),
+        (0x00013000, 0x0001342E),
             ]
     
     path_short = [
@@ -182,7 +176,7 @@ def main():
     train_counter = []
     test_lossess = []
     test_counter = [i * len(train_dataloader.dataset) for i in range(args.epochs + 1)]
-    correct_predictions_history = {}
+    accuracy_history = []
 
     #examples = enumerate(test_dataloader)
     #batch_idx, (example_data, example_targets) = next(examples)
@@ -206,13 +200,25 @@ def main():
     optimizer = optim.Adadelta(model.parameters(), lr = args.lr)
 
     scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
-    test(model, device, test_dataloader, test_lossess)
+
+    predictions, targets, accuracy = test(model, device, test_dataloader, test_lossess)
+    accuracy_history.append(accuracy)
+    
     for epoch in range(1, args.epochs + 1):
         augmentator.incrementSeed(epoch) #starts at 1 or origin_seed + 1 
         train(args, model, device, train_dataloader, optimizer, epoch, train_lossess, train_counter)
-        if epoch == 1: augmentator.incrementTestSeed()#sets always 0 or origin_seed
-        test(model, device, test_dataloader, test_lossess, correct_predictions_history) 
+
+        if epoch == 1: 
+            augmentator.incrementTestSeed()#sets always 0 or origin_seed
+
+        predictions, targets, accuracy = test(model, device, test_dataloader, test_lossess)
+        accuracy_history.append(accuracy)
+
+        plot_predictions_table(predictions, targets, epoch, args)
+
         scheduler.step()
+
+    compareDatasetPredicts(dataset_test, predictions, targets, args.experiment)
 
     performance_fig = plt.figure()
     plt.plot(train_counter, train_lossess, color='green', zorder=3)
@@ -223,7 +229,6 @@ def main():
     performance_fig.savefig(f'../results/my_performance_glyphnet{args.glyphnet}_shortfont{args.short_font}_fill{args.fill}.png')
 
     print("Correct classes: ")
-    print(correct_predictions_history)
 
 
     if args.save_model:

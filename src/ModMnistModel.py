@@ -22,7 +22,7 @@ class ModMnistModel(nn.Module):
         self.conv1 = nn.Conv2d(1, 64, 3, 1) #(input, output(n filters), kernel_size, stride)
         self.conv2 = nn.Conv2d(64, 128, 3, 1)
         self.conv3 = nn.Conv2d(128, 256, 3, 1)
-        self.conv4 = nn.Conv2d(256, 256, 3, 1)
+        self.conv4 = nn.Conv2d(256, 256, 3, 1) #512
 
         self.dropout1 = nn.Dropout(0.2)
         self.dropout2 = nn.Dropout(0.2)

@@ -41,11 +41,11 @@ def main():
             (img, label) = img_label
             # Convertir de tensor a NumPy
             if isinstance(img, torch.Tensor):
-                img = img.cpu().numpy()
+                img = img.permute(1, 2, 0).cpu().numpy()
 
             # Eliminar la dimensión del canal si es 1 -> De (1, H, W) a (H, W)
-            if img.shape[0] == 1:
-                img = img.squeeze(0)
+            if img.shape[2] == 1:
+                img = img[:, :, 0]
 
             # Convertir a uint8
             final_img = (img * 255).astype(np.uint8)

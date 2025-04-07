@@ -3,16 +3,16 @@ import cv2
 import numpy as np
 from typing import List
 import random
-from .HieroglyphCharacterGenerator import HieroglyphCharacterGenerator
-from .CustomMorphOps import dilate, erode, close, rotate, shear, crop, resize_to_square, fill
+from HieroglyphCharacterGenerator import HieroglyphCharacterGenerator
+from CustomMorphOps import dilate, erode, close, rotate, shear, crop, resize_to_square, fill
 
 STRUC_ELEM_SHAPE = (3,3)
 MIN_ANGLE = 0
 MAX_ANGLE = 4
 MIN_SHEAR_FACTOR = 0.00
 MAX_SHEAR_FACTOR = 0.20
-MIN_ITERS = 1
-MAX_ITERS = 2
+MIN_ITERS = 0
+MAX_ITERS = 1
 
 class HieroglyphAugmentator:
 
