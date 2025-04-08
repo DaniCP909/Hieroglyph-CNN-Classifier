@@ -4,10 +4,10 @@ import random
 import torch
 import cv2
 from PIL import Image, ImageFont, ImageDraw, ImageFilter
-from HieroglyphCharacterGenerator import HieroglyphCharacterGenerator
-from HieroglyphAugmentator import HieroglyphAugmentator
-from HieroglyphDataset import HieroglyphDataset
-from CustomMorphOps import resize_to_square
+from .HieroglyphCharacterGenerator import HieroglyphCharacterGenerator
+from .HieroglyphAugmentator import HieroglyphAugmentator
+from .HieroglyphDataset import HieroglyphDataset
+from .CustomMorphOps import resize_to_square
 
 CHUNK_SIZE = 10 #Plot of (20,20) subplots
 
@@ -107,6 +107,8 @@ def compareDatasetPredicts(test_dataset: HieroglyphDataset,
                            targets: list,
                            predicts: list,
                            experiment: int = 0):
+    print(targets[:5])
+    print(predicts[:5])
     if len(targets) == len(predicts):
         common_len = len(targets)
         n_chunks = common_len // (CHUNK_SIZE ** 2)

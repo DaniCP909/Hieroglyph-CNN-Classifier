@@ -19,6 +19,7 @@ from components.HieroglyphDataset import HieroglyphDataset
 from components.VisualizeTools import plot_predictions_table, compareDatasetPredicts
 
 from ModMnistModel import ModMnistModel
+from MnistModel import MnistModel
 
 from sklearn.metrics import confusion_matrix
 import seaborn as sn
@@ -85,7 +86,7 @@ def main():
     parser = argparse.ArgumentParser(description='Entrenamiento MNIST con PyTorch')
 
     parser.add_argument('--batch-size', type=int, default=64, metavar='N', help='input batch size for training (default = 64)')
-    parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N', help='input batch size for testing (default = 1000)')
+    parser.add_argument('--test-batch-size', type=int, default=64, metavar='N', help='input batch size for testing (default = 1000)')
     parser.add_argument('--epochs', type=int, default=14, metavar='N', help='number of epochs to train (default = 14)')
     parser.add_argument('--lr', type=float, default=1.0, metavar='LR', help='learning rate (default = 1.0)')
     parser.add_argument('--gamma', type=float, default=0.7, metavar='M', help='learning rate step gamma (default = 0.7)')
@@ -134,7 +135,7 @@ def main():
     paths = [ 
         "../files/fonts/Noto_Sans_Egyptian_Hieroglyphs/NotoSansEgyptianHieroglyphs-Regular.ttf",
         "../files/fonts/NewGardiner/NewGardinerBMP.ttf",
-        "./files/fonts/JSeshFont/JSeshFont.ttf",
+        "../files/fonts/JSeshFont/JSeshFont.ttf",
             ]
     ranges = [ 
         (0x00013000, 0x0001342E),
@@ -195,8 +196,8 @@ def main():
     #    plt.yticks([])
     #example_figure.savefig('./results/my_examples1.png')
 
-    if args.large_mod: model = ModMnistModel(num_classes=generator_len).to(device)
-    else: model = ModMnistModel(num_classes=generator_len, fc1_out=1024).to(device)
+    if args.large_mod: model = MnistModel(num_classes=generator_len).to(device)
+    else: model = MnistModel(num_classes=generator_len).to(device)
 
     print(f'--- Selected: {device}')
     optimizer = optim.Adadelta(model.parameters(), lr = args.lr)
@@ -208,8 +209,11 @@ def main():
         train(args, model, device, train_dataloader, optimizer, epoch, train_lossess, train_counter)
         if epoch == 1: augmentator.incrementTestSeed()#sets always 0 or origin_seed
         predictions, targets, accuracy = test(model, device, test_dataloader, test_lossess, correct_predictions_history) 
+        print(f"Targets{targets[:20]}")
+        print(f"Predicts{predictions[:20]}")
+        plot_predictions_table(predictions, targets, epoch)
         scheduler.step()
-    compareDatasetPredicts(dataset_test, predictions, targets, args.experiment)
+    compareDatasetPredicts(dataset_test, targets=targets, predicts=predictions, experiment=args.experiment)
 
     performance_fig = plt.figure()
     plt.plot(train_counter, train_lossess, color='green', zorder=3)

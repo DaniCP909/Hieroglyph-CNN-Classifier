@@ -132,7 +132,7 @@ def main():
     paths = [ 
         "../files/fonts/Noto_Sans_Egyptian_Hieroglyphs/NotoSansEgyptianHieroglyphs-Regular.ttf",
         "../files/fonts/NewGardiner/NewGardinerBMP.ttf",
-        "./files/fonts/JSeshFont/JSeshFont.ttf",
+        "../files/fonts/JSeshFont/JSeshFont.ttf",
             ]
     ranges = [ 
         (0x00013000, 0x0001342E),
@@ -214,7 +214,7 @@ def main():
         predictions, targets, accuracy = test(model, device, test_dataloader, test_lossess)
         accuracy_history.append(accuracy)
 
-        plot_predictions_table(predictions, targets, epoch, args)
+        plot_predictions_table(predictions, targets, epoch)
 
         scheduler.step()
 

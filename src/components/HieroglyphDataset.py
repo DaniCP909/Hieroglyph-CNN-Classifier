@@ -1,6 +1,6 @@
 import torch
 from torch.utils.data import Dataset
-from HieroglyphAugmentator import HieroglyphAugmentator
+from .HieroglyphAugmentator import HieroglyphAugmentator
 import cv2
 
 

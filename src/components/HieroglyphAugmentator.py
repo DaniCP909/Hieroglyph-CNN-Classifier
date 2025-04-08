@@ -3,8 +3,8 @@ import cv2
 import numpy as np
 from typing import List
 import random
-from HieroglyphCharacterGenerator import HieroglyphCharacterGenerator
-from CustomMorphOps import dilate, erode, close, rotate, shear, crop, resize_to_square, fill
+from .HieroglyphCharacterGenerator import HieroglyphCharacterGenerator
+from .CustomMorphOps import dilate, erode, close, rotate, shear, crop, resize_to_square, fill
 
 STRUC_ELEM_SHAPE = (3,3)
 MIN_ANGLE = 0
@@ -60,7 +60,7 @@ class HieroglyphAugmentator:
         sheared = shear(rotated, morphValues['sh_factor'])
 
         result = crop(sheared, 0)
-        result = cv2.resize(resize_to_square(result, 10), (100, 100))
+        result = cv2.resize(resize_to_square(result, 10), (28, 28))
 
         return (result, seed)
 
